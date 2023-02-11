@@ -3,7 +3,7 @@ import type { Timestamp, WithId } from "@/lib/firebase";
 export type MessageDocumentData = {
   createdAt: Timestamp;
   content: string;
-  sendId: string;
+  senderId: string;
 };
 
 export type Message = WithId<MessageDocumentData>;
