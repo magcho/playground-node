@@ -2,8 +2,9 @@ import {
   getTestEnv,
   initializeTestEnvironment,
 } from "../rules/firestore/utils";
-
+import { messageTest } from "./collecctions/message";
 import { usersTest } from "./collecctions/user";
+
 describe("firestore.rules", () => {
   beforeAll(async () => {
     await initializeTestEnvironment(
@@ -20,4 +21,5 @@ describe("firestore.rules", () => {
   });
 
   usersTest();
+  messageTest();
 });
