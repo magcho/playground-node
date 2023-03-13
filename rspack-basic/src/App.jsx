@@ -14,12 +14,11 @@ function App() {
         </a>
       </div>
       <h1>Rspack + React</h1>
-      <Name name="hot reload" />
+      <Name name="hello" />
       <div className="card">
         <button onClick={() => setCount((count) => count + 1)}>
           count is {count}
         </button>
-        <span>hello</span>
         <p>
           Edit <code>src/App.jsx</code> and save to test HMR
         </p>
