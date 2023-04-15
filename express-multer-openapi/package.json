@@ -11,7 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "epxress": "^0.0.1-security",
-    "express": "^4.17.2",
+    "express": "^4.17.3",
     "express-openapi-validator": "^4.13.5",
     "morgan": "^1.10.0",
     "multer": "^1.4.4",
