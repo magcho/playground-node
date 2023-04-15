@@ -11,7 +11,7 @@
   "author": "magcho",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "knex": "^0.95.14",
     "morgan": "^1.10.0",
     "sqlite3": "^5.0.2"
