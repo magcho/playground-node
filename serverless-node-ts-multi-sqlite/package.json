@@ -12,7 +12,7 @@
   "dependencies": {
     "@middy/core": "^3.4.0",
     "@middy/http-json-body-parser": "^3.4.0",
-    "knex": "^2.3.0",
+    "knex": "^2.4.0",
     "sqlite3": "^5.1.2"
   },
   "devDependencies": {
