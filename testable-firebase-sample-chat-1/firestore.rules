@@ -1,0 +1,23 @@
+// http://127.0.0.1:8080/emulator/v1/projects/fs-sample-open-chat-test:ruleCoverage.html
+rules_version = '2';
+service cloud.firestore {
+    match /databases/{database}/documents {
+        function isLoggedIn(){
+            return request.auth.uid != null;
+        }
+        function isOwn(uid){
+            return isLoggedIn() && request.auth.uid == uid;
+        }
+
+        match /users/{uid} {
+            allow read: if isLoggedIn();
+            allow write: if isOwn(uid);
+        }
+
+        match /messages/{uid}{
+            allow read: if isLoggedIn();
+            allow create: if isOwn(request.resource.data.senderId);
+            allow update, delete: if isOwn(resource.data.senderId);
+        }
+    }
+}
