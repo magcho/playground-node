@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<2ac6afd22c568f467799f53f6d2629fb>>
+ * @generated SignedSource<<1b6a7fae7143cdb49672c524754e2dcf>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,6 +11,7 @@
 import { ReaderFragment } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type RepositoryListPage_viewer$data = {
+  readonly id: string;
   readonly login: string;
   readonly repositories: {
     readonly edges: ReadonlyArray<{
@@ -31,7 +32,20 @@ export type RepositoryListPage_viewer$key = {
   readonly " $fragmentSpreads": FragmentRefs<"RepositoryListPage_viewer">;
 };
 
-const node: ReaderFragment = {
+import RepositoryListPagePaginationQuery_graphql from './RepositoryListPagePaginationQuery.graphql';
+
+const node: ReaderFragment = (function(){
+var v0 = [
+  "repositories"
+],
+v1 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "id",
+  "storageKey": null
+};
+return {
   "argumentDefinitions": [
     {
       "defaultValue": 10,
@@ -51,11 +65,27 @@ const node: ReaderFragment = {
         "count": "count",
         "cursor": "cursor",
         "direction": "forward",
-        "path": [
-          "repositories"
-        ]
+        "path": (v0/*: any*/)
       }
-    ]
+    ],
+    "refetch": {
+      "connection": {
+        "forward": {
+          "count": "count",
+          "cursor": "cursor"
+        },
+        "backward": null,
+        "path": (v0/*: any*/)
+      },
+      "fragmentPathInResult": [
+        "node"
+      ],
+      "operation": RepositoryListPagePaginationQuery_graphql,
+      "identifierInfo": {
+        "identifierField": "id",
+        "identifierQueryVariableName": "id"
+      }
+    }
   },
   "name": "RepositoryListPage_viewer",
   "selections": [
@@ -106,13 +136,7 @@ const node: ReaderFragment = {
               "name": "node",
               "plural": false,
               "selections": [
-                {
-                  "alias": null,
-                  "args": null,
-                  "kind": "ScalarField",
-                  "name": "id",
-                  "storageKey": null
-                },
+                (v1/*: any*/),
                 {
                   "args": null,
                   "kind": "FragmentSpread",
@@ -165,12 +189,14 @@ const node: ReaderFragment = {
         }
       ],
       "storageKey": "__RepositoryListPage_repositories_connection(orderBy:{\"direction\":\"DESC\",\"field\":\"UPDATED_AT\"},ownerAffiliations:[\"OWNER\"])"
-    }
+    },
+    (v1/*: any*/)
   ],
   "type": "User",
   "abstractKey": null
 };
+})();
 
-(node as any).hash = "35189815724526f5485bc61fa8dc7946";
+(node as any).hash = "6148b4bf1d3373c8beb095d60d37c4a5";
 
 export default node;

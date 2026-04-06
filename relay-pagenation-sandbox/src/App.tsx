@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
+import { useQueryLoader } from 'react-relay';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import TokenSettingsPage from './pages/TokenSettingsPage';
 import RepositoryListPage from './pages/RepositoryListPage';
+import { starredRepositoryListQuery } from './pages/StarredRepositoryListPage';
 
 /**
  * App: ルートコンポーネント
@@ -27,10 +30,27 @@ import RepositoryListPage from './pages/RepositoryListPage';
  *   7. Suspense 解除 → リポジトリ一覧表示
  */
 export default function App() {
+  /**
+   * スターリポジトリの先読み
+   * App マウント時に 1ページ目のデータを先読みして、
+   * モーダルを開く前にキャッシュに用意する
+   */
+  const [starredQueryRef, loadStarredQuery] = useQueryLoader(starredRepositoryListQuery);
+
+  /**
+   * コンポーネントマウント時にスターリポジトリを先読み
+   */
+  useEffect(() => {
+    const token = localStorage.getItem('github_pat');
+    if (token) {
+      loadStarredQuery({}, { fetchPolicy: 'store-or-network' });
+    }
+  }, [loadStarredQuery]);
+
   return (
     <Routes>
       <Route path="/settings" element={<TokenSettingsPage />} />
-      <Route path="/repositories" element={<RepositoryListPage />} />
+      <Route path="/repositories" element={<RepositoryListPage starredQueryRef={starredQueryRef} />} />
       <Route path="*" element={<Navigate to="/repositories" replace />} />
     </Routes>
   );

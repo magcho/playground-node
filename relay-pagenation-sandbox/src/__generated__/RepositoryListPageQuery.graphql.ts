@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c5143cd38a98f5499f9c6f3c9da6fa81>>
+ * @generated SignedSource<<140dcbf9b09567bcba3d7d284e455567>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,10 +10,7 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type RepositoryListPageQuery$variables = {
-  count?: number | null | undefined;
-  cursor?: string | null | undefined;
-};
+export type RepositoryListPageQuery$variables = Record<PropertyKey, never>;
 export type RepositoryListPageQuery$data = {
   readonly viewer: {
     readonly " $fragmentSpreads": FragmentRefs<"RepositoryListPage_viewer">;
@@ -27,26 +24,9 @@ export type RepositoryListPageQuery = {
 const node: ConcreteRequest = (function(){
 var v0 = [
   {
-    "defaultValue": 10,
-    "kind": "LocalArgument",
-    "name": "count"
-  },
-  {
-    "defaultValue": null,
-    "kind": "LocalArgument",
-    "name": "cursor"
-  }
-],
-v1 = [
-  {
-    "kind": "Variable",
-    "name": "after",
-    "variableName": "cursor"
-  },
-  {
-    "kind": "Variable",
+    "kind": "Literal",
     "name": "first",
-    "variableName": "count"
+    "value": 10
   },
   {
     "kind": "Literal",
@@ -64,14 +44,14 @@ v1 = [
     ]
   }
 ],
-v2 = {
+v1 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "id",
   "storageKey": null
 },
-v3 = {
+v2 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
@@ -80,7 +60,7 @@ v3 = {
 };
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": [],
     "kind": "Fragment",
     "metadata": null,
     "name": "RepositoryListPageQuery",
@@ -94,18 +74,7 @@ return {
         "plural": false,
         "selections": [
           {
-            "args": [
-              {
-                "kind": "Variable",
-                "name": "count",
-                "variableName": "count"
-              },
-              {
-                "kind": "Variable",
-                "name": "cursor",
-                "variableName": "cursor"
-              }
-            ],
+            "args": null,
             "kind": "FragmentSpread",
             "name": "RepositoryListPage_viewer"
           }
@@ -118,7 +87,7 @@ return {
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": [],
     "kind": "Operation",
     "name": "RepositoryListPageQuery",
     "selections": [
@@ -139,7 +108,7 @@ return {
           },
           {
             "alias": null,
-            "args": (v1/*: any*/),
+            "args": (v0/*: any*/),
             "concreteType": "RepositoryConnection",
             "kind": "LinkedField",
             "name": "repositories",
@@ -161,8 +130,8 @@ return {
                     "name": "node",
                     "plural": false,
                     "selections": [
+                      (v1/*: any*/),
                       (v2/*: any*/),
-                      (v3/*: any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -206,7 +175,7 @@ return {
                         "name": "primaryLanguage",
                         "plural": false,
                         "selections": [
-                          (v3/*: any*/),
+                          (v2/*: any*/),
                           {
                             "alias": null,
                             "args": null,
@@ -277,11 +246,11 @@ return {
                 "storageKey": null
               }
             ],
-            "storageKey": null
+            "storageKey": "repositories(first:10,orderBy:{\"direction\":\"DESC\",\"field\":\"UPDATED_AT\"},ownerAffiliations:[\"OWNER\"])"
           },
           {
             "alias": null,
-            "args": (v1/*: any*/),
+            "args": (v0/*: any*/),
             "filters": [
               "orderBy",
               "ownerAffiliations"
@@ -291,23 +260,23 @@ return {
             "kind": "LinkedHandle",
             "name": "repositories"
           },
-          (v2/*: any*/)
+          (v1/*: any*/)
         ],
         "storageKey": null
       }
     ]
   },
   "params": {
-    "cacheID": "96c02e8b295fef7eac69229110265fac",
+    "cacheID": "0499f4abdbbaa34836ff1f98ca9ae825",
     "id": null,
     "metadata": {},
     "name": "RepositoryListPageQuery",
     "operationKind": "query",
-    "text": "query RepositoryListPageQuery(\n  $count: Int = 10\n  $cursor: String\n) {\n  viewer {\n    ...RepositoryListPage_viewer_1G22uz\n    id\n  }\n}\n\nfragment RepositoryCard_repository on Repository {\n  id\n  name\n  nameWithOwner\n  description\n  url\n  stargazerCount\n  forkCount\n  primaryLanguage {\n    name\n    color\n  }\n  updatedAt\n  isPrivate\n}\n\nfragment RepositoryListPage_viewer_1G22uz on User {\n  login\n  repositories(first: $count, after: $cursor, orderBy: {field: UPDATED_AT, direction: DESC}, ownerAffiliations: [OWNER]) {\n    edges {\n      node {\n        id\n        ...RepositoryCard_repository\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
+    "text": "query RepositoryListPageQuery {\n  viewer {\n    ...RepositoryListPage_viewer\n    id\n  }\n}\n\nfragment RepositoryCard_repository on Repository {\n  id\n  name\n  nameWithOwner\n  description\n  url\n  stargazerCount\n  forkCount\n  primaryLanguage {\n    name\n    color\n  }\n  updatedAt\n  isPrivate\n}\n\nfragment RepositoryListPage_viewer on User {\n  login\n  repositories(first: 10, orderBy: {field: UPDATED_AT, direction: DESC}, ownerAffiliations: [OWNER]) {\n    edges {\n      node {\n        id\n        ...RepositoryCard_repository\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n  id\n}\n"
   }
 };
 })();
 
-(node as any).hash = "54477dec277085ae36d33fa50a9849e1";
+(node as any).hash = "4b6ac20bed64d667ef24477d5cdebda2";
 
 export default node;

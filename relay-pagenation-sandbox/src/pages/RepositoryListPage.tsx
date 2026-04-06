@@ -1,39 +1,35 @@
-import { Suspense, useState, useCallback } from 'react';
-import { useLazyLoadQuery, useFragment, graphql } from 'react-relay';
+import { Suspense, useState, useEffect } from 'react';
+import { useLazyLoadQuery, usePaginationFragment, graphql } from 'react-relay';
 import { useNavigate } from 'react-router-dom';
 import RepositoryCard from '../components/RepositoryCard';
+import RepositoryModal from '../components/RepositoryModal';
+import { StarredRepositoryListContent } from './StarredRepositoryListPage';
 import type { RepositoryListPageQuery as QueryType } from '../__generated__/RepositoryListPageQuery.graphql';
 import type { RepositoryListPage_viewer$key } from '../__generated__/RepositoryListPage_viewer.graphql';
+import type { RepositoryListPagePaginationQuery as PaginationQueryType } from '../__generated__/RepositoryListPagePaginationQuery.graphql';
 
 /**
  * RepositoryListPage_viewer Fragment
  *
- * Relay Fragment の役割:
- *   - コンポーネントが必要とするデータ構造を宣言
- *   - parent コンポーネントから受け取った $key に基づいて useFragment が自動的にデータを抽出
- *   - Fragment 内での型定義により、TypeScript の型安全性を確保
+ * usePaginationFragment 用の Fragment
  *
- * @argumentDefinitions:
- *   - Fragment が受け取る引数（パラメータ）を定義
- *   - count: ページあたりのリポジトリ数（デフォルト 10）
- *   - cursor: ページネーション用のカーソル（次のページ開始位置）
+ * 重要な指定:
+ *   - @refetchable(queryName: "RepositoryListPagePaginationQuery")
+ *     Relay が「次ページ読み込み」時に実行するクエリを自動生成する
+ *     このクエリは relay-compiler が RepositoryListPagePaginationQuery.graphql.ts として生成
  *
- * @connection:
- *   - Relay のページネーション管理の核となる指定
- *   - repositories フィールドをコネクション（接続）として登録
- *   - "さらに読み込む" で新しいデータが追加される時、
- *     Relay が自動的に edges を追加・マージしてくれる
- *   - key="RepositoryListPage_repositories" は接続の一意識別子
+ *   - @argumentDefinitions
+ *     ページネーション用の引数：count（1ページのアイテム数）、cursor（次ページ開始位置）
  *
- * ...RepositoryCard_repository:
- *   - RepositoryCard.tsx で定義された Fragment を展開
- *   - Fragment の「コロケーション」：データ要件が各コンポーネントの近くで定義される
- *   - 親が子コンポーネントのデータ要件を明示的に知る必要がない
+ *   - @connection
+ *     edges をコネクション（接続）として管理
+ *     loadNext/loadPrevious で新しい edges が自動マージされる
  */
 const viewerFragment = graphql`
   fragment RepositoryListPage_viewer on User
+    @refetchable(queryName: "RepositoryListPagePaginationQuery")
     @argumentDefinitions(
-      count: { type: "Int!", defaultValue: 10 }
+      count: { type: "Int", defaultValue: 10 }
       cursor: { type: "String" }
     ) {
     login
@@ -62,29 +58,19 @@ const viewerFragment = graphql`
  *
  * 役割: ページの初期データを取得するルートクエリ
  *
- * Relay では、ページごとに通常1つの「ルートクエリ」を持ちます。
- * 複数の Fragment の親となり、アプリケーションの「エントリーポイント」です。
+ * usePaginationFragment での使用:
+ *   - 初回ロード時のみ実行（cursor なしで最初のページを取得）
+ *   - その後の "さらに読み込む" は usePaginationFragment が @refetchable で
+ *     自動生成された RepositoryListPagePaginationQuery を使用
  *
- * $count, $cursor の変数:
- *   - useLazyLoadQuery 実行時に { count: 10, cursor: "..." } で渡される
- *   - Fragment に @arguments で転送される
- *
- * @arguments:
- *   - Fragment の @argumentDefinitions で定義された引数に値を渡す
- *   - viewer Fragment が $count と $cursor を受け取る
- *
- * ページネーションのフロー:
- *   1. 初回: cursor = undefined で実行
- *   2. "さらに読み込む" クリック
- *   3. 親コンポーネント (RepositoryListPage) が cursor state を更新
- *   4. key={cursor} により Suspense 境界が再マウント
- *   5. 新しい cursor でルートクエリ再実行
- *   6. @connection で edges が自動マージされる
+ * $count のデフォルト値:
+ *   - 最初の Fragment 引数が { count: 10 } で初期化されるため、
+ *     このクエリからは $count を明示的に渡す必要がない
  */
 const repositoryListQuery = graphql`
-  query RepositoryListPageQuery($count: Int = 10, $cursor: String) {
+  query RepositoryListPageQuery {
     viewer {
-      ...RepositoryListPage_viewer @arguments(count: $count, cursor: $cursor)
+      ...RepositoryListPage_viewer
     }
   }
 `;
@@ -92,42 +78,44 @@ const repositoryListQuery = graphql`
 /**
  * RepositoryList コンポーネント
  *
- * 役割: 取得したデータを画面に表示（表示層）
+ * 役割: usePaginationFragment を使ってページネーション機能を実装
  *
- * Relay の設計パターン:
- *   - 親コンポーネント: useLazyLoadQuery でクエリ実行 → $key を渡す
- *   - 子コンポーネント: useFragment で $key からデータ抽出
- *
- * viewerRef（$key）:
- *   - 親の RepositoryListContent が useLazyLoadQuery で取得した data.viewer
- *   - useFragment にこの $key を渡すことで、Fragment で定義されたデータが抽出される
- *   - RepositoryListPage_viewer$key という型で型安全性が保証される
+ * usePaginationFragment の利点:
+ *   - loadNext / loadPrevious / refetch を自動的に提供
+ *   - isLoadingNext / isLoadingPrevious でローディング状態を取得
+ *   - データの自動マージを @connection が処理
+ *   - cursor 管理を Relay に委譲（コンポーネント側は state 不要）
  */
-function RepositoryList({ viewerRef, onLoadMore }: { viewerRef: RepositoryListPage_viewer$key; onLoadMore: (cursor: string) => void }) {
+function RepositoryList({ viewerRef }: { viewerRef: RepositoryListPage_viewer$key }) {
   /**
-   * useFragment: Fragment データの取得
+   * usePaginationFragment: ページネーション対応 Fragment データ取得
    *
-   * 役割:
-   *   - parent ($key) から Fragment で定義されたデータを抽出
-   *   - Environment.store からキャッシュデータを読み込む
-   *   - TypeScript の型情報を Fragment から生成
+   * 戻り値:
+   *   - data: Fragment で定義されたフィールド（login, repositories など）
+   *   - loadNext: 次ページの読み込み（引数: first（読み込み件数））
+   *   - loadPrevious: 前ページの読み込み
+   *   - hasNext / hasPrevious: さらにページがあるかどうか
+   *   - isLoadingNext / isLoadingPrevious: ローディング中かどうか
+   *   - refetch: クエリを再実行
    *
-   * Relay のキャッシュシステム:
-   *   1. ルートクエリ実行時にサーバーからデータ取得
-   *   2. Relay が自動的にデータをノーマライズして store に保存
-   *   3. useFragment が store から必要なデータだけを抽出
-   *   4. もしデータが不足していても、Relay が自動的に再フェッチ
+   * @refetchable が RepositoryListPagePaginationQuery を自動生成しているため、
+   * usePaginationFragment は loadNext() 呼び出し時にそのクエリを自動実行
    */
-  const data = useFragment(viewerFragment, viewerRef);
-
-  const handleLoadMore = useCallback(() => {
-    if (data.repositories.pageInfo?.endCursor) {
-      onLoadMore(data.repositories.pageInfo.endCursor);
-    }
-  }, [data.repositories.pageInfo?.endCursor, onLoadMore]);
+  const { data, loadNext, hasNext, isLoadingNext } = usePaginationFragment<
+    PaginationQueryType,
+    RepositoryListPage_viewer$key
+  >(viewerFragment, viewerRef);
 
   const edges = data.repositories.edges ?? [];
-  const hasNextPage = data.repositories.pageInfo?.hasNextPage ?? false;
+
+  /**
+   * 自動読み込み: 次ページがあれば自動的に loadNext を実行
+   */
+  useEffect(() => {
+    if (hasNext && !isLoadingNext) {
+      loadNext(10);
+    }
+  }, [hasNext, isLoadingNext, loadNext]);
 
   return (
     <div>
@@ -141,20 +129,10 @@ function RepositoryList({ viewerRef, onLoadMore }: { viewerRef: RepositoryListPa
         })
       )}
 
-      {hasNextPage && (
-        <button
-          onClick={handleLoadMore}
-          style={{
-            padding: '0.75rem 2rem',
-            width: '100%',
-            marginTop: '1rem',
-            cursor: 'pointer',
-          }}
-        >
-          さらに読み込む
-        </button>
+      {isLoadingNext && (
+        <p style={{ textAlign: 'center', color: '#888', marginTop: '1rem' }}>読み込み中...</p>
       )}
-      {!hasNextPage && edges.length > 0 && (
+      {!hasNext && edges.length > 0 && (
         <p style={{ textAlign: 'center', color: '#888', marginTop: '1rem' }}>すべて表示しました</p>
       )}
     </div>
@@ -164,35 +142,25 @@ function RepositoryList({ viewerRef, onLoadMore }: { viewerRef: RepositoryListPa
 /**
  * RepositoryListContent コンポーネント
  *
- * 役割: Relay のクエリ実行（データ取得層）
+ * 役割: Relay のルートクエリ実行（データ取得層）
  *
- * Relay のデータ取得パターン:
- *   1. useLazyLoadQuery でクエリ実行開始
- *   2. Relay がサーバーにリクエスト（Environment.network.fetchFn を呼び出し）
- *   3. データがキャッシュされるまで Suspense throw（親の Suspense が fallback 表示）
- *   4. キャッシュ完了後、コンポーネント描画
- *   5. 子に $key を渡す
+ * usePaginationFragment への変更点:
+ *   - ページネーション用の変数（cursor など）を渡さなくなった
+ *   - 初回のみルートクエリで基本情報を取得
+ *   - その後の "さらに読み込む" は usePaginationFragment が内部で
+ *     @refetchable で生成されたクエリを自動実行
  */
-function RepositoryListContent({ cursor, onLoadMore }: { cursor?: string; onLoadMore: (cursor: string) => void }) {
+function RepositoryListContent() {
   /**
-   * useLazyLoadQuery: 最初のクエリ実行
+   * useLazyLoadQuery: ルートクエリ実行
    *
-   * 役割:
-   *   - コンポーネント描画時にクエリを実行
-   *   - キャッシュが完成するまで Suspense を throw
-   *   - 親コンポーネントの Suspense が fallback を表示
-   *
-   * Suspense 統合の仕組み:
-   *   - Relay のキャッシュが「完全」になるまで Promise を throw
-   *   - React が throw を捕捉して Suspense 境界で fallback を表示
-   *   - キャッシュが完全になると Promise 完了 → 描画再開
-   *
-   * 変数の渡し方:
-   *   - count: 1ページあたりのリポジトリ数
-   *   - cursor: ページネーション用カーソル（undefined なら最初のページ）
+   * 新しい形:
+   *   - 変数なし（Fragment の @argumentDefinitions のデフォルト値が使用される）
+   *   - シンプルに viewer のデータを取得するだけ
+   *   - ページネーション管理は usePaginationFragment に任せる
    */
-  const data = useLazyLoadQuery<QueryType>(repositoryListQuery, { count: 10, cursor });
-  return <RepositoryList viewerRef={data.viewer} onLoadMore={onLoadMore} />;
+  const data = useLazyLoadQuery<QueryType>(repositoryListQuery, {});
+  return <RepositoryList viewerRef={data.viewer} />;
 }
 
 /**
@@ -205,32 +173,31 @@ function RepositoryListContent({ cursor, onLoadMore }: { cursor?: string; onLoad
  *     ↓ Suspense で保護
  *   RepositoryListContent（クエリ層・useLazyLoadQuery）
  *     ↓ $key を渡す
- *   RepositoryList（表示層・useFragment）
- *     ↓ 各フィールドの $key を渡す
+ *   RepositoryList（表示層・usePaginationFragment）
+ *     ↓ loadNext を呼び出してページネーション
  *   RepositoryCard（詳細層・useFragment）
  *
- * ページネーション実装のポイント:
- *   1. cursor state で現在のページ位置を管理
- *   2. "さらに読み込む" で新しい cursor に update
- *   3. key={cursor} で RepositoryListContent が再マウント
- *   4. 新しい cursor で useLazyLoadQuery 再実行
- *   5. @connection により edges が自動マージされる
- *      （古いデータと新しいデータが1つの配列に結合される）
+ * usePaginationFragment への変更:
+ *   - cursor state が不要（Relay が内部管理）
+ *   - key={cursor} による再マウントが不要
+ *   - RepositoryListContent は1回だけマウント
+ *   - "さらに読み込む" は usePaginationFragment の loadNext() で処理
  */
-export default function RepositoryListPage() {
+export default function RepositoryListPage({ starredQueryRef }: { starredQueryRef?: any }) {
   const navigate = useNavigate();
   const token = localStorage.getItem('github_pat');
 
   /**
-   * cursor state: ページネーション用
-   *   - undefined: 最初のページ
-   *   - string: GraphQL API の endCursor（次のページ開始位置）
-   *
-   * setCursor が呼ばれる → key={cursor} で RepositoryListContent 再マウント
-   *   → useLazyLoadQuery が新しい cursor で再実行
-   *   → Suspense が待機 → 新規データ取得完了で描画再開
+   * モーダル管理
+   * isModalOpen = true のとき、RepositoryModal を表示
    */
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  /**
+   * スターリポジトリモーダル管理
+   * isStarModalOpen = true のとき、スターリポジトリを表示
+   */
+  const [isStarModalOpen, setIsStarModalOpen] = useState(false);
 
   if (!token) {
     return (
@@ -245,26 +212,87 @@ export default function RepositoryListPage() {
 
   return (
     <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1>リポジトリ一覧</h1>
-        <button onClick={() => navigate('/settings')} style={{ padding: '0.5rem 1rem' }}>
-          トークン設定
-        </button>
+      {/* ランディングセクション */}
+      <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
+        <h1 style={{ marginBottom: '1.5rem' }}>リポジトリ管理</h1>
+        <div style={{ marginBottom: '2rem', fontSize: '0.875rem', color: '#666', lineHeight: 1.6 }}>
+          <p style={{ marginBottom: '1rem' }}>
+            <strong>⭐ スターリポジトリ</strong>
+            <br />
+            初期読み込み時に 1 ページ目を取得 & モーダルを開いてからそのさきを読み込み（preload）
+          </p>
+          <p>
+            <strong>リポジトリ一覧</strong>
+            <br />
+            モーダルを開いてから全件読み込み
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            style={{
+              padding: '0.75rem 2rem',
+              background: '#2563eb',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              fontWeight: 500,
+            }}
+          >
+            リポジトリ一覧を開く
+          </button>
+          <button
+            onClick={() => setIsStarModalOpen(true)}
+            style={{
+              padding: '0.75rem 2rem',
+              background: '#f59e0b',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              fontWeight: 500,
+            }}
+          >
+            ⭐ スターリポジトリ一覧
+          </button>
+          <button
+            onClick={() => navigate('/settings')}
+            style={{
+              padding: '0.75rem 2rem',
+              background: '#e5e7eb',
+              color: '#1f2937',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              fontWeight: 500,
+            }}
+          >
+            トークン設定
+          </button>
+        </div>
       </div>
-      {/*
-        Suspense 境界: Relay のデータ取得を待機
-        - RepositoryListContent が useLazyLoadQuery でデータ完全キャッシュまで throw
-        - fallback を表示して待機
-        - キャッシュ完了後、通常描画に切り替わる
-      */}
-      <Suspense fallback={<p>リポジトリを読み込み中...</p>}>
-        {/*
-          key={cursor}: ページネーション時に RepositoryListContent を再マウント
-          - cursor が変わる → コンポーネント再マウント
-          - 新しい cursor で useLazyLoadQuery が再実行される
-        */}
-        <RepositoryListContent key={cursor} cursor={cursor} onLoadMore={setCursor} />
-      </Suspense>
+
+      {/* リポジトリモーダル */}
+      {isModalOpen && (
+        <RepositoryModal onClose={() => setIsModalOpen(false)}>
+          <Suspense fallback={<p>リポジトリを読み込み中...</p>}>
+            <RepositoryListContent />
+          </Suspense>
+        </RepositoryModal>
+      )}
+
+      {/* スターリポジトリモーダル */}
+      {isStarModalOpen && starredQueryRef ? (
+        <RepositoryModal onClose={() => setIsStarModalOpen(false)}>
+          <Suspense fallback={<p>スターリポジトリを読み込み中...</p>}>
+            <StarredRepositoryListContent queryReference={starredQueryRef} />
+          </Suspense>
+        </RepositoryModal>
+      ) : null}
     </div>
   );
 }
