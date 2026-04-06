@@ -10,24 +10,31 @@ import { starredRepositoryListQuery } from './pages/StarredRepositoryListPage';
  *
  * SPA ナビゲーション構成:
  *   /settings → TokenSettingsPage（GitHub PAT 入力）
- *   /repositories → RepositoryListPage（リポジトリ一覧・Relay クエリ実行）
+ *   /repositories → RepositoryListPage（リポジトリ一覧・データ取得）
  *   その他 → /repositories にリダイレクト
  *
  * Relay との統合:
  *   - main.tsx で RelayEnvironmentProvider でラップ済み
  *   - どのページに遷移しても Relay Environment にアクセス可能
- *   - RepositoryListPage の useLazyLoadQuery が Environment を使用して
- *     認証付きでサーバーにリクエスト
+ *   - RepositoryListContent（Suspense で保護）が useLazyLoadQuery で
+ *     Environment を使用して認証付きでサーバーにリクエスト
+ *
+ * App での事前読み込み:
+ *   - useQueryLoader で starredRepositoryListQuery を先読み
+ *   - token がある場合、マウント時に loadStarredQuery を実行
+ *   - 結果を starredQueryRef として RepositoryListPage に渡す
+ *   - モーダル開く前に 1 ページ目が cache に準備される
  *
  * ページ遷移フロー:
  *   1. ユーザーが /settings へ
  *   2. Token 入力・保存
  *   3. /repositories へ遷移
- *   4. RepositoryListPage が Suspense で保護された Suspense 内で
- *      useLazyLoadQuery を実行
- *   5. Relay が fetchFn （localStorage の token で認証）を呼び出し
- *   6. Environment.store にデータがキャッシュされる
- *   7. Suspense 解除 → リポジトリ一覧表示
+ *   4. RepositoryListPage がマウント（starredQueryRef を受け取り）
+ *   5. リポジトリ一覧ボタンクリック → RepositoryListContent が useLazyLoadQuery 実行
+ *   6. スターリポジトリボタンクリック → usePreloadedQuery が cache から即座に返す
+ *   7. Relay が fetchFn （localStorage の token で認証）を呼び出し
+ *   8. Environment.store にデータがキャッシュされる
+ *   9. Suspense 解除 → データ表示
  */
 export default function App() {
   /**

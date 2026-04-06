@@ -64,7 +64,18 @@ export const starredRepositoryListQuery = graphql`
 /**
  * StarredRepositoryList コンポーネント
  *
- * usePaginationFragment を使ってスターリポジトリのページネーション機能を実装
+ * 役割: usePaginationFragment を使ってスターリポジトリのページネーション機能を実装
+ *
+ * 自動読み込み:
+ *   - useEffect が hasNext && !isLoadingNext を監視
+ *   - 次ページがあれば自動的に loadNext(10) を実行
+ *   - すべてのページが読み込まれるまで繰り返す
+ *   - UI には「読み込み中...」テキストのみ表示（ボタンなし）
+ *
+ * preload 戦略:
+ *   - App.tsx の useQueryLoader で 1 ページ目を事前読み込み
+ *   - モーダルを開くと usePreloadedQuery がキャッシュから即座に返す
+ *   - 2 ページ目以降は自動読み込みで fetch
  */
 function StarredRepositoryList({ viewerRef }: { viewerRef: StarredRepositoryListPage_viewer$key }) {
   const { data, loadNext, hasNext, isLoadingNext } = usePaginationFragment<
@@ -109,7 +120,19 @@ function StarredRepositoryList({ viewerRef }: { viewerRef: StarredRepositoryList
  * StarredRepositoryListContent コンポーネント
  *
  * 役割: 先読み済みのクエリデータを消費する（スターリポジトリ版）
- * usePreloadedQuery で先読み済みデータを取得
+ *       RepositoryListPage 内で Suspense 境界によって保護される
+ *
+ * usePreloadedQuery の仕組み:
+ *   - props: queryReference（App.tsx の useQueryLoader で先読み済み）
+ *   - cache に 1 ページ目のデータが既に存在
+ *   - Suspense をスキップして即座にデータを返す
+ *   - モーダルを開いた時点で表示準備完了
+ *
+ * preload vs on-demand:
+ *   - リポジトリ一覧: on-demand（ボタンクリック後に fetch）
+ *   - スターリポジトリ: preload（App マウント時に fetch）
+ *   - 理由: スターリポジトリは初回アクセス時に 1 ページ目を先読み
+ *     → モーダル開く時の待機時間を削減
  */
 export function StarredRepositoryListContent({ queryReference }: { queryReference: any }) {
   const data = usePreloadedQuery<QueryType>(starredRepositoryListQuery, queryReference);

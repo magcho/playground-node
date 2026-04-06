@@ -85,6 +85,12 @@ const repositoryListQuery = graphql`
  *   - isLoadingNext / isLoadingPrevious でローディング状態を取得
  *   - データの自動マージを @connection が処理
  *   - cursor 管理を Relay に委譲（コンポーネント側は state 不要）
+ *
+ * 自動読み込み:
+ *   - useEffect が hasNext && !isLoadingNext を監視
+ *   - 次ページがあれば自動的に loadNext(10) を実行
+ *   - すべてのページが読み込まれるまで繰り返す
+ *   - UI には「読み込み中...」テキストのみ表示（ボタンなし）
  */
 function RepositoryList({ viewerRef }: { viewerRef: RepositoryListPage_viewer$key }) {
   /**
@@ -143,12 +149,18 @@ function RepositoryList({ viewerRef }: { viewerRef: RepositoryListPage_viewer$ke
  * RepositoryListContent コンポーネント
  *
  * 役割: Relay のルートクエリ実行（データ取得層）
+ *       RepositoryListPage 内で Suspense 境界によって保護される
  *
- * usePaginationFragment への変更点:
- *   - ページネーション用の変数（cursor など）を渡さなくなった
- *   - 初回のみルートクエリで基本情報を取得
- *   - その後の "さらに読み込む" は usePaginationFragment が内部で
- *     @refetchable で生成されたクエリを自動実行
+ * データ取得フロー:
+ *   - useLazyLoadQuery で repositoryListQuery を実行（変数なし）
+ *   - Fragment の @argumentDefinitions が default count: 10 を使用
+ *   - Relay が fetchFn を呼び出す → サーバーから 1 ページ目を取得
+ *   - Environment.store にキャッシュ → RepositoryList に $key を渡す
+ *
+ * usePaginationFragment との役割分担:
+ *   - RepositoryListContent: ルートクエリ実行（初回ロード）
+ *   - RepositoryList: usePaginationFragment でページネーション管理
+ *     → loadNext() で次ページ fetch → auto-fetch で全ページロード
  */
 function RepositoryListContent() {
   /**

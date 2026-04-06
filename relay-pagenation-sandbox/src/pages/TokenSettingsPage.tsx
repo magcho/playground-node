@@ -29,12 +29,17 @@ export default function TokenSettingsPage() {
    *   - fetchFn が毎回ここから読み込む
    *   - 以降のリクエストに自動的に Bearer token が含まれる
    *   - 認証が必要なクエリ（viewer など）が実行可能に
+   *
+   * フロー:
+   *   - /repositories へ遷移
+   *   - App.useEffect が token を検出して loadStarredQuery 実行（preload開始）
+   *   - RepositoryListPage がマウント
+   *   - ユーザーがボタンクリック時に Suspense + useLazyLoadQuery が実行
    */
   const handleSave = () => {
     localStorage.setItem(TOKEN_KEY, token.trim());
     setSaved(true);
     // /repositories へ遷移して RepositoryListPage を表示
-    // (Suspense が useLazyLoadQuery をトリガー → 認証付きリクエスト実行)
     setTimeout(() => navigate('/repositories'), 500);
   };
 
