@@ -1,0 +1,156 @@
+"""
+GitHub GraphQL API Schema (Minimal for Relay development)
+Full schema: https://docs.github.com/en/graphql/reference/queries
+"""
+
+type Query {
+  """Fetch a user by login."""
+  user(login: String!): User
+
+  """Fetch the authenticated user."""
+  viewer: User!
+}
+
+type User {
+  """The user's public profile ID."""
+  id: ID!
+
+  """The user's login name."""
+  login: String!
+
+  """The user's name."""
+  name: String
+
+  """The user's email."""
+  email: String
+
+  """The user's bio."""
+  bio: String
+
+  """Repositories owned by the user."""
+  repositories(
+    first: Int
+    after: String
+    last: Int
+    before: String
+    orderBy: RepositoryOrder
+    ownerAffiliations: [RepositoryAffiliation]
+  ): RepositoryConnection!
+}
+
+type Repository {
+  """The ID of the repository."""
+  id: ID!
+
+  """The name of the repository."""
+  name: String!
+
+  """The nameWithOwner of the repository."""
+  nameWithOwner: String!
+
+  """The description of the repository."""
+  description: String
+
+  """The HTTP URL for this repository."""
+  url: String!
+
+  """The number of stargazers."""
+  stargazerCount: Int!
+
+  """The number of forks."""
+  forkCount: Int!
+
+  """The primary language of the repository."""
+  primaryLanguage: Language
+
+  """When the repository was last updated."""
+  updatedAt: DateTime!
+
+  """Is the repository private?"""
+  isPrivate: Boolean!
+}
+
+type Language {
+  """The name of the language."""
+  name: String!
+
+  """Color associated with the language."""
+  color: String
+}
+
+type RepositoryConnection {
+  """Contains the nodes."""
+  edges: [RepositoryEdge]
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+}
+
+type RepositoryEdge {
+  """The item at the end of the edge."""
+  node: Repository
+
+  """A cursor for use in pagination."""
+  cursor: String!
+}
+
+type PageInfo {
+  """When paginating forwards, are there more items?"""
+  hasNextPage: Boolean!
+
+  """When paginating backwards, are there more items?"""
+  hasPreviousPage: Boolean!
+
+  """When paginating forwards, the cursor to continue."""
+  endCursor: String
+
+  """When paginating backwards, the cursor to continue."""
+  startCursor: String
+}
+
+input RepositoryOrder {
+  """The field to order repositories by."""
+  field: RepositoryOrderField!
+
+  """The ordering direction."""
+  direction: OrderDirection!
+}
+
+enum RepositoryOrderField {
+  """Order repositories by creation time."""
+  CREATED_AT
+
+  """Order repositories by update time."""
+  UPDATED_AT
+
+  """Order repositories by push time."""
+  PUSHED_AT
+
+  """Order repositories by name."""
+  NAME
+
+  """Order repositories by number of stargazers."""
+  STARGAZERS
+}
+
+enum RepositoryAffiliation {
+  """Repositories that are owned by the authenticated user."""
+  OWNER
+
+  """Repositories that are collaborations."""
+  COLLABORATOR
+
+  """Repositories that have the authenticated user as an organization member."""
+  ORGANIZATION_MEMBER
+}
+
+enum OrderDirection {
+  """Ascending order."""
+  ASC
+
+  """Descending order."""
+  DESC
+}
+
+"""An ISO-8601 encoded UTC date string."""
+scalar DateTime
