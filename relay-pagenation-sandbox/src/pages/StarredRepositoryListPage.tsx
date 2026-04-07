@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
-import { usePreloadedQuery, usePaginationFragment, graphql } from 'react-relay';
-import RepositoryCard from '../components/RepositoryCard';
-import type { StarredRepositoryListPageQuery as QueryType } from '../__generated__/StarredRepositoryListPageQuery.graphql';
-import type { StarredRepositoryListPage_viewer$key } from '../__generated__/StarredRepositoryListPage_viewer.graphql';
-import type { StarredRepositoryListPagePaginationQuery as PaginationQueryType } from '../__generated__/StarredRepositoryListPagePaginationQuery.graphql';
+import { useEffect } from "react";
+import { usePreloadedQuery, usePaginationFragment, graphql } from "react-relay";
+import RepositoryCard from "../components/RepositoryCard";
+import type { StarredRepositoryListPageQuery as QueryType } from "../__generated__/StarredRepositoryListPageQuery.graphql";
+import type { StarredRepositoryListPage_viewer$key } from "../__generated__/StarredRepositoryListPage_viewer.graphql";
+import type { StarredRepositoryListPagePaginationQuery as PaginationQueryType } from "../__generated__/StarredRepositoryListPagePaginationQuery.graphql";
 
 /**
  * StarredRepositoryListPage_viewer Fragment
@@ -23,11 +23,11 @@ import type { StarredRepositoryListPagePaginationQuery as PaginationQueryType } 
  */
 const viewerFragment = graphql`
   fragment StarredRepositoryListPage_viewer on User
-    @refetchable(queryName: "StarredRepositoryListPagePaginationQuery")
-    @argumentDefinitions(
-      count: { type: "Int", defaultValue: 10 }
-      cursor: { type: "String" }
-    ) {
+  @refetchable(queryName: "StarredRepositoryListPagePaginationQuery")
+  @argumentDefinitions(
+    count: { type: "Int", defaultValue: 10 }
+    cursor: { type: "String" }
+  ) {
     login
     starredRepositories(
       first: $count
@@ -77,11 +77,16 @@ export const starredRepositoryListQuery = graphql`
  *   - モーダルを開くと usePreloadedQuery がキャッシュから即座に返す
  *   - 2 ページ目以降は自動読み込みで fetch
  */
-function StarredRepositoryList({ viewerRef }: { viewerRef: StarredRepositoryListPage_viewer$key }) {
-  const { data, loadNext, hasNext, isLoadingNext } = usePaginationFragment<
-    PaginationQueryType,
-    StarredRepositoryListPage_viewer$key
-  >(viewerFragment, viewerRef);
+function StarredRepositoryList({
+  viewerRef,
+}: {
+  viewerRef: StarredRepositoryListPage_viewer$key;
+}) {
+  const { data, loadNext, loadPrevious, hasNext, isLoadingNext } =
+    usePaginationFragment<PaginationQueryType, StarredRepositoryListPage_viewer$key>(
+      viewerFragment,
+      viewerRef,
+    );
 
   const edges = data.starredRepositories.edges ?? [];
 
@@ -98,7 +103,7 @@ function StarredRepositoryList({ viewerRef }: { viewerRef: StarredRepositoryList
     <div>
       <h2>@{data.login} のスターリポジトリ</h2>
       {edges.length === 0 ? (
-        <p style={{ color: '#888' }}>スターリポジトリがありません</p>
+        <p style={{ color: "#888" }}>スターリポジトリがありません</p>
       ) : (
         edges.map((edge) => {
           if (!edge?.node) return null;
@@ -107,10 +112,14 @@ function StarredRepositoryList({ viewerRef }: { viewerRef: StarredRepositoryList
       )}
 
       {isLoadingNext && (
-        <p style={{ textAlign: 'center', color: '#888', marginTop: '1rem' }}>読み込み中...</p>
+        <p style={{ textAlign: "center", color: "#888", marginTop: "1rem" }}>
+          読み込み中...
+        </p>
       )}
       {!hasNext && edges.length > 0 && (
-        <p style={{ textAlign: 'center', color: '#888', marginTop: '1rem' }}>すべて表示しました</p>
+        <p style={{ textAlign: "center", color: "#888", marginTop: "1rem" }}>
+          すべて表示しました
+        </p>
       )}
     </div>
   );
@@ -134,7 +143,14 @@ function StarredRepositoryList({ viewerRef }: { viewerRef: StarredRepositoryList
  *   - 理由: スターリポジトリは初回アクセス時に 1 ページ目を先読み
  *     → モーダル開く時の待機時間を削減
  */
-export function StarredRepositoryListContent({ queryReference }: { queryReference: any }) {
-  const data = usePreloadedQuery<QueryType>(starredRepositoryListQuery, queryReference);
+export function StarredRepositoryListContent({
+  queryReference,
+}: {
+  queryReference: any;
+}) {
+  const data = usePreloadedQuery<QueryType>(
+    starredRepositoryListQuery,
+    queryReference,
+  );
   return <StarredRepositoryList viewerRef={data.viewer} />;
 }

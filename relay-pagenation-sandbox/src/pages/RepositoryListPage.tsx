@@ -1,12 +1,13 @@
-import { Suspense, useState, useEffect } from 'react';
-import { useLazyLoadQuery, usePaginationFragment, graphql } from 'react-relay';
-import { useNavigate } from 'react-router-dom';
-import RepositoryCard from '../components/RepositoryCard';
-import RepositoryModal from '../components/RepositoryModal';
-import { StarredRepositoryListContent } from './StarredRepositoryListPage';
-import type { RepositoryListPageQuery as QueryType } from '../__generated__/RepositoryListPageQuery.graphql';
-import type { RepositoryListPage_viewer$key } from '../__generated__/RepositoryListPage_viewer.graphql';
-import type { RepositoryListPagePaginationQuery as PaginationQueryType } from '../__generated__/RepositoryListPagePaginationQuery.graphql';
+import { Suspense, useState, useEffect } from "react";
+import { useLazyLoadQuery, usePaginationFragment, graphql } from "react-relay";
+import { useNavigate } from "react-router-dom";
+import RepositoryCard from "../components/RepositoryCard";
+import RepositoryModal from "../components/RepositoryModal";
+import RelayStoreDebug from "../components/RelayStoreDebug";
+import { StarredRepositoryListContent } from "./StarredRepositoryListPage";
+import type { RepositoryListPageQuery as QueryType } from "../__generated__/RepositoryListPageQuery.graphql";
+import type { RepositoryListPage_viewer$key } from "../__generated__/RepositoryListPage_viewer.graphql";
+import type { RepositoryListPagePaginationQuery as PaginationQueryType } from "../__generated__/RepositoryListPagePaginationQuery.graphql";
 
 /**
  * RepositoryListPage_viewer Fragment
@@ -27,11 +28,11 @@ import type { RepositoryListPagePaginationQuery as PaginationQueryType } from '.
  */
 const viewerFragment = graphql`
   fragment RepositoryListPage_viewer on User
-    @refetchable(queryName: "RepositoryListPagePaginationQuery")
-    @argumentDefinitions(
-      count: { type: "Int", defaultValue: 10 }
-      cursor: { type: "String" }
-    ) {
+  @refetchable(queryName: "RepositoryListPagePaginationQuery")
+  @argumentDefinitions(
+    count: { type: "Int", defaultValue: 10 }
+    cursor: { type: "String" }
+  ) {
     login
     repositories(
       first: $count
@@ -92,7 +93,11 @@ const repositoryListQuery = graphql`
  *   - すべてのページが読み込まれるまで繰り返す
  *   - UI には「読み込み中...」テキストのみ表示（ボタンなし）
  */
-function RepositoryList({ viewerRef }: { viewerRef: RepositoryListPage_viewer$key }) {
+function RepositoryList({
+  viewerRef,
+}: {
+  viewerRef: RepositoryListPage_viewer$key;
+}) {
   /**
    * usePaginationFragment: ページネーション対応 Fragment データ取得
    *
@@ -127,7 +132,7 @@ function RepositoryList({ viewerRef }: { viewerRef: RepositoryListPage_viewer$ke
     <div>
       <h2>@{data.login} のリポジトリ</h2>
       {edges.length === 0 ? (
-        <p style={{ color: '#888' }}>リポジトリがありません</p>
+        <p style={{ color: "#888" }}>リポジトリがありません</p>
       ) : (
         edges.map((edge) => {
           if (!edge?.node) return null;
@@ -136,10 +141,14 @@ function RepositoryList({ viewerRef }: { viewerRef: RepositoryListPage_viewer$ke
       )}
 
       {isLoadingNext && (
-        <p style={{ textAlign: 'center', color: '#888', marginTop: '1rem' }}>読み込み中...</p>
+        <p style={{ textAlign: "center", color: "#888", marginTop: "1rem" }}>
+          読み込み中...
+        </p>
       )}
       {!hasNext && edges.length > 0 && (
-        <p style={{ textAlign: 'center', color: '#888', marginTop: '1rem' }}>すべて表示しました</p>
+        <p style={{ textAlign: "center", color: "#888", marginTop: "1rem" }}>
+          すべて表示しました
+        </p>
       )}
     </div>
   );
@@ -195,9 +204,13 @@ function RepositoryListContent() {
  *   - RepositoryListContent は1回だけマウント
  *   - "さらに読み込む" は usePaginationFragment の loadNext() で処理
  */
-export default function RepositoryListPage({ starredQueryRef }: { starredQueryRef?: any }) {
+export default function RepositoryListPage({
+  starredQueryRef,
+}: {
+  starredQueryRef?: any;
+}) {
   const navigate = useNavigate();
-  const token = localStorage.getItem('github_pat');
+  const token = localStorage.getItem("github_pat");
 
   /**
    * モーダル管理
@@ -213,9 +226,19 @@ export default function RepositoryListPage({ starredQueryRef }: { starredQueryRe
 
   if (!token) {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center', maxWidth: '480px', margin: '0 auto' }}>
+      <div
+        style={{
+          padding: "2rem",
+          textAlign: "center",
+          maxWidth: "480px",
+          margin: "0 auto",
+        }}
+      >
         <p>GitHub Personal Access Token が設定されていません。</p>
-        <button onClick={() => navigate('/settings')} style={{ padding: '0.5rem 1.5rem' }}>
+        <button
+          onClick={() => navigate("/settings")}
+          style={{ padding: "0.5rem 1.5rem" }}
+        >
           設定ページへ
         </button>
       </div>
@@ -223,15 +246,23 @@ export default function RepositoryListPage({ starredQueryRef }: { starredQueryRe
   }
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
+    <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
       {/* ランディングセクション */}
-      <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
-        <h1 style={{ marginBottom: '1.5rem' }}>リポジトリ管理</h1>
-        <div style={{ marginBottom: '2rem', fontSize: '0.875rem', color: '#666', lineHeight: 1.6 }}>
-          <p style={{ marginBottom: '1rem' }}>
+      <div style={{ marginBottom: "3rem", textAlign: "center" }}>
+        <h1 style={{ marginBottom: "1.5rem" }}>リポジトリ管理</h1>
+        <div
+          style={{
+            marginBottom: "2rem",
+            fontSize: "0.875rem",
+            color: "#666",
+            lineHeight: 1.6,
+          }}
+        >
+          <p style={{ marginBottom: "1rem" }}>
             <strong>⭐ スターリポジトリ</strong>
             <br />
-            初期読み込み時に 1 ページ目を取得 & モーダルを開いてからそのさきを読み込み（preload）
+            初期読み込み時に 1 ページ目を取得 &
+            モーダルを開いてからそのさきを読み込み（preload）
           </p>
           <p>
             <strong>リポジトリ一覧</strong>
@@ -239,17 +270,24 @@ export default function RepositoryListPage({ starredQueryRef }: { starredQueryRe
             モーダルを開いてから全件読み込み
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "1rem",
+            justifyContent: "center",
+            flexWrap: "wrap",
+          }}
+        >
           <button
             onClick={() => setIsModalOpen(true)}
             style={{
-              padding: '0.75rem 2rem',
-              background: '#2563eb',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '1rem',
+              padding: "0.75rem 2rem",
+              background: "#2563eb",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "1rem",
               fontWeight: 500,
             }}
           >
@@ -258,28 +296,28 @@ export default function RepositoryListPage({ starredQueryRef }: { starredQueryRe
           <button
             onClick={() => setIsStarModalOpen(true)}
             style={{
-              padding: '0.75rem 2rem',
-              background: '#f59e0b',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '1rem',
+              padding: "0.75rem 2rem",
+              background: "#f59e0b",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "1rem",
               fontWeight: 500,
             }}
           >
             ⭐ スターリポジトリ一覧
           </button>
           <button
-            onClick={() => navigate('/settings')}
+            onClick={() => navigate("/settings")}
             style={{
-              padding: '0.75rem 2rem',
-              background: '#e5e7eb',
-              color: '#1f2937',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '1rem',
+              padding: "0.75rem 2rem",
+              background: "#e5e7eb",
+              color: "#1f2937",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "1rem",
               fontWeight: 500,
             }}
           >
@@ -287,6 +325,9 @@ export default function RepositoryListPage({ starredQueryRef }: { starredQueryRe
           </button>
         </div>
       </div>
+
+      {/* Relay Store デバッグ */}
+      <RelayStoreDebug />
 
       {/* リポジトリモーダル */}
       {isModalOpen && (
