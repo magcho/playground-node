@@ -11,7 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "better-sqlite3": "^7.6.2",
-    "knex": "^2.3.0"
+    "knex": "^2.4.0"
   },
   "devDependencies": {
     "serverless-offline": "^11.1.3",
